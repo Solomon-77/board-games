@@ -2,7 +2,11 @@
 
 const App = () => {
   return (
-    <div className="">App</div>
+    <div className="">
+      <nav>Board Master</nav>
+      <main></main>
+      <footer></footer>
+    </div>
   )
 }
 
