@@ -2,7 +2,7 @@
 
 const Home = () => {
     return (
-        <div className="">Home</div>
+        <div className="max-w-[1250px] mx-auto p-4">Home</div>
     )
 }
 
