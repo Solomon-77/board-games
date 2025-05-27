@@ -33,7 +33,7 @@ const Chess = () => {
    const [board] = useState<Board>(createBoard)
 
    function getSquareColor(rowIndex: number, colIndex: number): string {
-      return (rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-gray-800'
+      return (rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'
    }
 
    return (
@@ -54,7 +54,7 @@ const Chess = () => {
                         <img
                            src={pieces[board[rowIndex][colIndex] as Piece]}
                            alt={board[rowIndex][colIndex]}
-                           className="w-full h-full p-[2px]"
+                           className="w-full h-full p-[2px] cursor-pointer select-none"
                         />
                      )}
                   </div>
