@@ -41,12 +41,30 @@ const Chess = () => {
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
       return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
-   }
+   } // piece.startsWith returns true or false value
 
    function clickPiece(row: number, col: number) {
       const clickedPiece = board[row][col]
 
-      
+      // if there is no selected piece then select a piece that is owned by current player
+      if (!selectedPiece) {
+         if (clickedPiece && isCurrentPlayerPiece(clickedPiece)) {
+            setSelectedPiece({ row, col })
+         }
+         return
+      }
+
+      // if clicking the same piece then deselect
+      if (selectedPiece.row === row && selectedPiece.col === col) {
+         setSelectedPiece(null)
+         return
+      }
+
+      // if click another piece then select it instead
+      if (clickedPiece && isCurrentPlayerPiece(clickedPiece)) {
+         setSelectedPiece({ row, col })
+         return
+      }
    }
 
    return (
