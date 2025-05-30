@@ -34,10 +34,9 @@ const Chess = () => {
 
    return (
       <>
-         <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4">
+         <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
             <div className="flex-1"></div>
             <div className="flex flex-col items-center max-w-[512px] w-full gap-2">
-               <h1 className="font-semibold text-lg">Chess Game</h1>
                <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
                   {board.map((row, rowIndex) => (
                      row.map((piece, colIndex) => (
@@ -50,6 +49,7 @@ const Chess = () => {
                                  src={pieces[piece]}
                                  alt={piece}
                                  className="h-full p-[3%] select-none cursor-pointer"
+                                 draggable={false}
                               />
                            )}
                         </div>
