@@ -17,9 +17,14 @@ const pieces = {
 
 type Piece = keyof typeof pieces
 type Board = (Piece | null)[][]
+type Player = 'white' | 'black'
+type Position = {
+   row: number,
+   col: number
+} | null
 
 const createBoard = (): Board => {
-   const initialBoard = Array(8).fill(null).map(() => Array(8).fill(null))
+   const initialBoard: Board = Array(8).fill(null).map(() => Array(8).fill(null))
 
    initialBoard[0] = ['b_rook', 'b_knight', 'b_bishop', 'b_queen', 'b_king', 'b_bishop', 'b_knight', 'b_rook']
    initialBoard[1] = Array(8).fill('b_pawn')
@@ -31,6 +36,18 @@ const createBoard = (): Board => {
 
 const Chess = () => {
    const [board, setBoard] = useState<Board>(createBoard)
+   const [currentPlayer, setCurrentPlayer] = useState<Player>('white') // currentPlayer is white by default
+   const [selectedPiece, setSelectedPiece] = useState<Position>(null)
+
+   function isCurrentPlayerPiece(piece: Piece): boolean {
+      return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
+   }
+
+   function clickPiece(row: number, col: number) {
+      const clickedPiece = board[row][col]
+
+      
+   }
 
    return (
       <>
@@ -41,6 +58,7 @@ const Chess = () => {
                   {board.map((row, rowIndex) => (
                      row.map((piece, colIndex) => (
                         <div
+                           onClick={() => clickPiece(rowIndex, colIndex)}
                            key={`${rowIndex}-${colIndex}`}
                            className={`aspect-square grid place-items-center ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}`}
                         >
