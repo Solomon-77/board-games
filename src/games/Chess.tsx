@@ -43,7 +43,7 @@ const Chess = () => {
       return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
    } // piece.startsWith returns true or false value
 
-   function clickPiece(row: number, col: number) {
+   function clickAndMovePiece(row: number, col: number) {
       const clickedPiece = board[row][col]
 
       // if there is no selected piece then select a piece that is owned by current player
@@ -65,6 +65,61 @@ const Chess = () => {
          setSelectedPiece({ row, col })
          return
       }
+
+      // move piece
+      const piece = board[selectedPiece.row][selectedPiece.col] // outputs piece like 'w_pawn'
+      if (piece && isValidMove(piece, selectedPiece, { row, col })) {
+         movePiece(selectedPiece, { row, col })
+      }
+      setSelectedPiece(null)
+   }
+
+   function isValidPawnMove(from: Position, to: Position): boolean {
+      if (!from || !to) return false
+
+      const direction = currentPlayer === 'white' ? -1 : 1
+      const startRow = currentPlayer === 'white' ? 6 : 1
+
+      const oneStepForward = to.row === from.row + direction && to.col === from.col
+      const twoStepForward = from.row === startRow && to.row === from.row + 2 * direction && to.col === from.col
+      const isTargetEmpty = board[to.row][to.col] === null
+
+      if (oneStepForward && isTargetEmpty) return true
+      if (twoStepForward && isTargetEmpty && board[from.row + direction][from.col] === null) return true
+
+      // diagonal capture
+      const isDiagonalCapture =
+         Math.abs(to.col - from.col) === 1 &&
+         to.row === from.row + direction &&
+         board[to.row][to.col] !== null &&
+         !isCurrentPlayerPiece(board[to.row][to.col]!)
+
+      if (isDiagonalCapture) return true
+
+      return false
+   }
+
+   function isValidMove(piece: Piece, from: Position, to: Position): boolean {
+      if (!from || !to) return false;
+
+      switch (piece) {
+         case 'w_pawn':
+         case 'b_pawn':
+            return isValidPawnMove(from, to)
+         default:
+            return false;
+      }
+   }
+
+   function movePiece(from: Position, to: Position) {
+      if (!from || !to) return;
+
+      const newBoard = board.map(row => [...row]);
+      newBoard[to.row][to.col] = newBoard[from.row][from.col];
+      newBoard[from.row][from.col] = null;
+
+      setBoard(newBoard);
+      setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
 
    return (
@@ -76,7 +131,7 @@ const Chess = () => {
                   {board.map((row, rowIndex) => (
                      row.map((piece, colIndex) => (
                         <div
-                           onClick={() => clickPiece(rowIndex, colIndex)}
+                           onClick={() => clickAndMovePiece(rowIndex, colIndex)}
                            key={`${rowIndex}-${colIndex}`}
                            className={`aspect-square grid place-items-center ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}`}
                         >
