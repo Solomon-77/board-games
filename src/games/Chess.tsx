@@ -38,6 +38,7 @@ const Chess = () => {
    const [board, setBoard] = useState<Board>(createBoard)
    const [currentPlayer, setCurrentPlayer] = useState<Player>('white') // currentPlayer is white by default
    const [selectedPiece, setSelectedPiece] = useState<Position>(null)
+   const [enPassantTarget, setEnPassantTarget] = useState<Position>(null)
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
       return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
@@ -66,7 +67,7 @@ const Chess = () => {
          return
       }
 
-      // move piece
+      // attempt move
       const piece = board[selectedPiece.row][selectedPiece.col] // outputs piece like 'w_pawn'
       if (piece && isValidMove(piece, selectedPiece, { row, col })) {
          movePiece(selectedPiece, { row, col })
@@ -80,6 +81,7 @@ const Chess = () => {
       const direction = currentPlayer === 'white' ? -1 : 1
       const startRow = currentPlayer === 'white' ? 6 : 1
 
+      // pawn move
       const oneStepForward = to.row === from.row + direction && to.col === from.col
       const twoStepForward = from.row === startRow && to.row === from.row + 2 * direction && to.col === from.col
       const isTargetEmpty = board[to.row][to.col] === null
@@ -94,7 +96,16 @@ const Chess = () => {
          board[to.row][to.col] !== null &&
          !isCurrentPlayerPiece(board[to.row][to.col]!)
 
-      if (isDiagonalCapture) return true
+      // en passant capture
+      const isEnPassantCapture =
+         Math.abs(to.col - from.col) === 1 &&
+         to.row === from.row + direction &&
+         board[to.row][to.col] === null &&
+         enPassantTarget &&
+         enPassantTarget.row === to.row &&
+         enPassantTarget.col === to.col
+
+      if (isDiagonalCapture || isEnPassantCapture) return true
 
       return false
    }
@@ -114,9 +125,28 @@ const Chess = () => {
    function movePiece(from: Position, to: Position) {
       if (!from || !to) return;
 
+      const direction = currentPlayer === 'white' ? -1 : 1;
+      const canBeCapturedEnPassant = Math.abs(from.row - to.row) === 2
+
+      const isEnPassantCapture =
+         Math.abs(to.col - from.col) === 1 &&
+         to.row === from.row + direction &&
+         board[to.row][to.col] === null &&
+         enPassantTarget &&
+         enPassantTarget.row === to.row &&
+         enPassantTarget.col === to.col;
+
+      if (canBeCapturedEnPassant) {
+         setEnPassantTarget({ row: from.row + direction, col: from.col }); // set square as en passant target
+      } else {
+         setEnPassantTarget(null);
+      }
+
       const newBoard = board.map(row => [...row]);
       newBoard[to.row][to.col] = newBoard[from.row][from.col];
       newBoard[from.row][from.col] = null;
+
+      if (isEnPassantCapture) newBoard[from.row][to.col] = null; // remove captured pawn
 
       setBoard(newBoard);
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
