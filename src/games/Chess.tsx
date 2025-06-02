@@ -152,6 +152,17 @@ const Chess = () => {
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
 
+   function isSquareSelected(row: number, col: number): string {
+      const isLight = (row + col) % 2 === 0
+      const isSelected = selectedPiece?.row === row && selectedPiece?.col === col
+
+      if (isSelected) {
+         return isLight ? 'bg-neutral-300' : 'bg-amber-900'
+      } else {
+         return isLight ? 'bg-white' : 'bg-amber-800'
+      }
+   }
+
    return (
       <>
          <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
@@ -163,13 +174,13 @@ const Chess = () => {
                         <div
                            onClick={() => clickAndMovePiece(rowIndex, colIndex)}
                            key={`${rowIndex}-${colIndex}`}
-                           className={`aspect-square grid place-items-center ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}`}
+                           className={`aspect-square grid place-items-center ${isSquareSelected(rowIndex, colIndex)}`}
                         >
                            {piece && (
                               <img
                                  src={pieces[piece]}
                                  alt={piece}
-                                 className="h-full p-[3%] select-none cursor-pointer"
+                                 className={`h-full p-[3%] select-none ${isCurrentPlayerPiece(piece) ? 'cursor-pointer' : 'cursor-default'}`}
                                  draggable={false}
                               />
                            )}
