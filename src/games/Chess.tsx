@@ -110,6 +110,33 @@ const Chess = () => {
       return false
    }
 
+   function isValidRookMove(from: Position, to: Position) {
+      if (!from || !to) return false
+
+      const isVerticalOrHorizontal =
+         (from.row === to.row && from.col !== to.col) || // horizontal
+         (from.col === to.col && from.row !== to.row)  // vertical
+
+      if (!isVerticalOrHorizontal) return false
+
+      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1);
+      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1);
+
+      for (
+         let currRow = from.row + rowStep, currCol = from.col + colStep;
+         currRow !== to.row || currCol !== to.col;
+         currRow += rowStep, currCol += colStep
+      ) {
+         if (board[currRow][currCol] !== null) return false;
+      }
+
+      // capture enemy piece not your own piece
+      const target = board[to.row][to.col];
+      if (target && isCurrentPlayerPiece(target)) return false;
+
+      return true;
+   }
+
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
 
@@ -117,6 +144,9 @@ const Chess = () => {
          case 'w_pawn':
          case 'b_pawn':
             return isValidPawnMove(from, to)
+         case 'w_rook':
+         case 'b_rook':
+            return isValidRookMove(from, to)
          default:
             return false;
       }
