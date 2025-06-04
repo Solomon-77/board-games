@@ -114,8 +114,8 @@ const Chess = () => {
       if (!from || !to) return false
 
       const isVerticalOrHorizontal =
-         (from.row === to.row && from.col !== to.col) || // horizontal
-         (from.col === to.col && from.row !== to.row)  // vertical
+         from.row === to.row || // horizontal
+         from.col === to.col  // vertical
 
       if (!isVerticalOrHorizontal) return false
 
@@ -159,7 +159,7 @@ const Chess = () => {
 
       if (!isBishopMove) return false
 
-      const rowStep = (to.row - from.row) > 0 ? 1 : -1; // to row 5 - from row 7
+      const rowStep = (to.row - from.row) > 0 ? 1 : -1;
       const colStep = (to.col - from.col) > 0 ? 1 : -1;
 
       for (
@@ -177,6 +177,30 @@ const Chess = () => {
       return true
    }
 
+   function isValidQueenMove(from: Position, to: Position): boolean {
+      if (!from || !to) return false
+
+      const isQueenMove =
+         from.row === to.row || // horizontal
+         from.col === to.col || // vertical
+         Math.abs(from.row - to.row) === Math.abs(from.col - to.col)
+
+      if (!isQueenMove) return false
+
+      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : 1)
+      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : 1)
+
+      for (
+         let r = from.row + rowStep, c = from.col + colStep;
+         r !== to.row || c !== to.col; // stop the loop after it reached this condition
+         r += rowStep, c += colStep
+      ) {
+         if (board[r][c]) return false; // if there is a piece return false
+      }
+
+      return true
+   }
+
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
 
@@ -184,7 +208,7 @@ const Chess = () => {
       if (piece.endsWith('_rook')) return isValidRookMove(from, to);
       if (piece.endsWith('_knight')) return isValidKnightMove(from, to);
       if (piece.endsWith('_bishop')) return isValidBishopMove(from, to);
-      // if (piece.endsWith('_queen')) return isValidQueenMove(from, to);
+      if (piece.endsWith('_queen')) return isValidQueenMove(from, to);
       // if (piece.endsWith('_king')) return isValidKingMove(from, to);
 
       return false;
