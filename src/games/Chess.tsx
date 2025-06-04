@@ -211,8 +211,7 @@ const Chess = () => {
       const isKingMove =
          (Math.abs(from.row - to.row) === 1 && from.col === to.col) ||
          (Math.abs(from.col - to.col) === 1 && from.row === to.row) ||
-         (Math.abs(from.row - to.row) === 1 && Math.abs(from.col - to.col) === 1) ||
-         (Math.abs(from.col - to.col) === 1 && Math.abs(from.row - to.row) === 1)
+         (Math.abs(from.row - to.row) === 1 && Math.abs(from.col - to.col) === 1)
 
       if (!isKingMove) return false
 
