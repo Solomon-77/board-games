@@ -110,7 +110,7 @@ const Chess = () => {
       return false
    }
 
-   function isValidRookMove(from: Position, to: Position) {
+   function isValidRookMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
 
       const isVerticalOrHorizontal =
@@ -137,19 +137,57 @@ const Chess = () => {
       return true;
    }
 
+   function isValidKnightMove(from: Position, to: Position): boolean {
+      if (!from || !to) return false
+
+      const isKnightMove =
+         Math.abs(from.row - to.row) === 2 && Math.abs(from.col - to.col) === 1 ||
+         Math.abs(from.col - to.col) === 2 && Math.abs(from.row - to.row) === 1
+
+      if (!isKnightMove) return false
+
+      const target = board[to.row][to.col]
+      if (target && isCurrentPlayerPiece(target)) return false
+
+      return true
+   }
+
+   function isValidBishopMove(from: Position, to: Position): boolean {
+      if (!from || !to) return false
+
+      const isBishopMove = Math.abs(from.row - to.row) === Math.abs(from.col - to.col)
+
+      if (!isBishopMove) return false
+
+      const rowStep = (to.row - from.row) > 0 ? 1 : -1; // to row 5 - from row 7
+      const colStep = (to.col - from.col) > 0 ? 1 : -1;
+
+      for (
+         let r = from.row + rowStep, c = from.col + colStep;
+         r !== to.row;
+         r += rowStep, c += colStep
+      ) {
+         if (board[r][c]) return false; // Blocked
+      }
+
+      // capture
+      const target = board[to.row][to.col];
+      if (target && isCurrentPlayerPiece(target)) return false;
+
+      return true
+   }
+
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
 
-      switch (piece) {
-         case 'w_pawn':
-         case 'b_pawn':
-            return isValidPawnMove(from, to)
-         case 'w_rook':
-         case 'b_rook':
-            return isValidRookMove(from, to)
-         default:
-            return false;
-      }
+      if (piece.endsWith('_pawn')) return isValidPawnMove(from, to);
+      if (piece.endsWith('_rook')) return isValidRookMove(from, to);
+      if (piece.endsWith('_knight')) return isValidKnightMove(from, to);
+      if (piece.endsWith('_bishop')) return isValidBishopMove(from, to);
+      // if (piece.endsWith('_queen')) return isValidQueenMove(from, to);
+      // if (piece.endsWith('_king')) return isValidKingMove(from, to);
+
+      return false;
    }
 
    function movePiece(from: Position, to: Position) {
