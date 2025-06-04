@@ -205,6 +205,23 @@ const Chess = () => {
       return true
    }
 
+   function isValidKingMove(from: Position, to: Position): boolean {
+      if (!from || !to) return false
+
+      const isKingMove =
+         (Math.abs(from.row - to.row) === 1 && from.col === to.col) ||
+         (Math.abs(from.col - to.col) === 1 && from.row === to.row) ||
+         (Math.abs(from.row - to.row) === 1 && Math.abs(from.col - to.col) === 1) ||
+         (Math.abs(from.col - to.col) === 1 && Math.abs(from.row - to.row) === 1)
+
+      if (!isKingMove) return false
+
+      const target = board[to.row][to.col]
+      if (target && isCurrentPlayerPiece(target)) return false
+
+      return true
+   }
+
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
 
@@ -213,7 +230,7 @@ const Chess = () => {
       if (piece.endsWith('_knight')) return isValidKnightMove(from, to);
       if (piece.endsWith('_bishop')) return isValidBishopMove(from, to);
       if (piece.endsWith('_queen')) return isValidQueenMove(from, to);
-      // if (piece.endsWith('_king')) return isValidKingMove(from, to);
+      if (piece.endsWith('_king')) return isValidKingMove(from, to);
 
       return false;
    }
