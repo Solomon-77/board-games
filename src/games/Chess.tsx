@@ -187,8 +187,8 @@ const Chess = () => {
 
       if (!isQueenMove) return false
 
-      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : 1)
-      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : 1)
+      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1)
+      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1)
 
       for (
          let r = from.row + rowStep, c = from.col + colStep;
@@ -197,6 +197,10 @@ const Chess = () => {
       ) {
          if (board[r][c]) return false; // if there is a piece return false
       }
+
+      // capture
+      const target = board[to.row][to.col];
+      if (target && isCurrentPlayerPiece(target)) return false;
 
       return true
    }
