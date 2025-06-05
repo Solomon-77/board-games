@@ -22,6 +22,14 @@ type Position = {
    row: number,
    col: number
 } | null
+type CastlingRights = {
+   w_king: boolean;
+   b_king: boolean;
+   w_rook_king: boolean;
+   w_rook_queen: boolean;
+   b_rook_king: boolean;
+   b_rook_queen: boolean;
+}
 
 const createBoard = (): Board => {
    const initialBoard: Board = Array(8).fill(null).map(() => Array(8).fill(null))
@@ -39,6 +47,14 @@ const Chess = () => {
    const [currentPlayer, setCurrentPlayer] = useState<Player>('white') // currentPlayer is white by default
    const [selectedPiece, setSelectedPiece] = useState<Position>(null)
    const [enPassantTarget, setEnPassantTarget] = useState<Position>(null)
+   const [hasMoved, setHasMoved] = useState<CastlingRights>({
+      w_king: false,
+      b_king: false,
+      w_rook_king: false,
+      w_rook_queen: false,
+      b_rook_king: false,
+      b_rook_queen: false,
+   });
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
       return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
@@ -192,7 +208,7 @@ const Chess = () => {
 
       for (
          let r = from.row + rowStep, c = from.col + colStep;
-         r !== to.row || c !== to.col; // stop the loop after it reached this condition
+         r !== to.row || c !== to.col; // loop while this is the condition
          r += rowStep, c += colStep
       ) {
          if (board[r][c]) return false; // if there is a piece return false
