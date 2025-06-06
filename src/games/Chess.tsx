@@ -319,6 +319,18 @@ const Chess = () => {
       newBoard[to.row][to.col] = newBoard[from.row][from.col];
       newBoard[from.row][from.col] = null;
 
+      // 3a. Handle Castling
+      if ((piece === "w_king" || piece === "b_king") && Math.abs(from.col - to.col) === 2) {
+         const row = from.row
+         if (to.col > from.col) {
+            newBoard[row][5] = newBoard[row][7]
+            newBoard[row][7] = null
+         } else {
+            newBoard[row][3] = newBoard[row][0]
+            newBoard[row][0] = null
+         }
+      }
+
       if (isEnPassantCapture) newBoard[from.row][to.col] = null; // remove captured pawn
 
       // 4. update board state and change player
