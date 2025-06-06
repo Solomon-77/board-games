@@ -251,7 +251,31 @@ const Chess = () => {
 
    function movePiece(from: Position, to: Position) {
       if (!from || !to) return;
+      const piece = board[from.row][from.col]
 
+      // 1. Update hasMoved if king/rook is moving from its original square
+      setHasMoved(prev => {
+         const update: Partial<CastlingRights> = {};
+
+         if (piece === 'w_king') {
+            update.w_king = true;
+         }
+         if (piece === 'b_king') {
+            update.b_king = true;
+         }
+         if (piece === 'w_rook') {
+            if (from.row === 7 && from.col === 0) update.w_rook_queen = true;
+            if (from.row === 7 && from.col === 7) update.w_rook_king = true;
+         }
+         if (piece === 'b_rook') {
+            if (from.row === 0 && from.col === 0) update.b_rook_queen = true;
+            if (from.row === 0 && from.col === 7) update.b_rook_king = true;
+         }
+
+         return { ...prev, ...update };
+      });
+
+      // 2. Compute en passant target
       const direction = currentPlayer === 'white' ? -1 : 1;
       const canBeCapturedEnPassant = Math.abs(from.row - to.row) === 2
 
@@ -269,13 +293,14 @@ const Chess = () => {
          setEnPassantTarget(null);
       }
 
+      // 3. Move/removal of piece
       const newBoard = board.map(row => [...row]);
       newBoard[to.row][to.col] = newBoard[from.row][from.col];
       newBoard[from.row][from.col] = null;
 
       if (isEnPassantCapture) newBoard[from.row][to.col] = null; // remove captured pawn
 
-      // update board state and change player
+      // 4. update board state and change player
       setBoard(newBoard);
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
