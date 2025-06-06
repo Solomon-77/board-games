@@ -221,9 +221,33 @@ const Chess = () => {
       return true
    }
 
+   function isValidCastling(from: Position, to: Position): boolean {
+      if (!from || !to) return false;
+
+      const kingMoved = currentPlayer === 'white' ? hasMoved.w_king : hasMoved.b_king
+      const rookMoved = currentPlayer === 'white'
+         ? (to.col > from.col ? hasMoved.w_rook_king : hasMoved.w_rook_queen)
+         : (to.col > from.col ? hasMoved.b_rook_king : hasMoved.b_rook_queen)
+
+      if (kingMoved || rookMoved) return false
+
+      const castleDirection = to.col > from.col ? 1 : -1
+      for (let c = from.col + castleDirection; c !== to.col; c += castleDirection) {
+         if (board[from.row][c] !== null) return false
+      }
+
+      return true
+   }
+
    function isValidKingMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
 
+      // check for castling first
+      if (Math.abs(from.col - to.col) === 2 && from.row === to.row) {
+         return isValidCastling(from, to)
+      }
+
+      // regular king move
       const isKingMove =
          Math.abs(from.row - to.row) <= 1 &&
          Math.abs(from.col - to.col) <= 1;
@@ -257,12 +281,9 @@ const Chess = () => {
       setHasMoved(prev => {
          const update: Partial<CastlingRights> = {};
 
-         if (piece === 'w_king') {
-            update.w_king = true;
-         }
-         if (piece === 'b_king') {
-            update.b_king = true;
-         }
+         if (piece === 'w_king') update.w_king = true;
+         if (piece === 'b_king') update.b_king = true;
+
          if (piece === 'w_rook') {
             if (from.row === 7 && from.col === 0) update.w_rook_queen = true;
             if (from.row === 7 && from.col === 7) update.w_rook_king = true;
