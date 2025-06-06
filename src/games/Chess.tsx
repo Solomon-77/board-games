@@ -225,9 +225,8 @@ const Chess = () => {
       if (!from || !to) return false
 
       const isKingMove =
-         (Math.abs(from.row - to.row) === 1 && from.col === to.col) ||
-         (Math.abs(from.col - to.col) === 1 && from.row === to.row) ||
-         (Math.abs(from.row - to.row) === 1 && Math.abs(from.col - to.col) === 1)
+         Math.abs(from.row - to.row) <= 1 &&
+         Math.abs(from.col - to.col) <= 1;
 
       if (!isKingMove) return false
 
@@ -276,6 +275,7 @@ const Chess = () => {
 
       if (isEnPassantCapture) newBoard[from.row][to.col] = null; // remove captured pawn
 
+      // update board state and change player
       setBoard(newBoard);
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
