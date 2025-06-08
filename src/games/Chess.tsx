@@ -236,6 +236,14 @@ const Chess = () => {
          if (board[from.row][c] !== null) return false
       }
 
+      // cannot castle out of or through check
+      if (isInCheck(currentPlayer, board)) return false
+      for (let step = 1; step <= 2; step++) {
+         const col = from.col + castleDirection * step
+         const testBoard = simulateMove(board, from, { row: from.row, col })
+         if (isInCheck(currentPlayer, testBoard!)) return false
+      }
+
       return true
    }
 
@@ -260,6 +268,14 @@ const Chess = () => {
       return true
    }
 
+   function simulateMove(board: Board, from: Position, to: Position): Board | null {
+      if (!from || !to) return null;
+      const b2 = board.map(row => [...row]);
+      b2[to.row][to.col] = b2[from.row][from.col];
+      b2[from.row][from.col] = null;
+      return b2;
+   }
+
    function findKing(player: Player, board: Board): Position {
       const king = player === 'white' ? 'w_king' : 'b_king'
       for (let r = 0; r < 8; r++) {
@@ -270,17 +286,105 @@ const Chess = () => {
       return null
    }
 
+   function doesPawnAttack(from: Position, target: Position, board: Board): boolean {
+      if (!from || !target) return false;
+      const piece = board[from.row][from.col]!;
+      const isWhite = piece.startsWith('w_');
+      const dir = isWhite ? -1 : 1;
+      return (
+         Math.abs(target.col - from.col) === 1 &&
+         target.row === from.row + dir
+      );
+   }
+
+   function canPieceAttack(piece: Piece, from: Position, to: Position, board: Board): boolean {
+      if (!from || !to) return false;
+
+      // pawn attacks
+      if (piece.endsWith('_pawn')) {
+         return doesPawnAttack(from, to, board);
+      }
+      // knight attacks
+      if (piece.endsWith('_knight')) {
+         const dr = Math.abs(from.row - to.row),
+            dc = Math.abs(from.col - to.col);
+         return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+      }
+      // bishop attacks
+      if (piece.endsWith('_bishop') || piece.endsWith('_queen')) {
+         if (Math.abs(from.row - to.row) === Math.abs(from.col - to.col)) {
+            const rStep = to.row > from.row ? 1 : -1;
+            const cStep = to.col > from.col ? 1 : -1;
+            for (
+               let r = from.row + rStep, c = from.col + cStep;
+               r !== to.row;
+               r += rStep, c += cStep
+            ) {
+               if (board[r][c]) return false;
+            }
+            return true;
+         }
+      }
+      // rook attacks
+      if (piece.endsWith('_rook') || piece.endsWith('_queen')) {
+         if (from.row === to.row || from.col === to.col) {
+            const rStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1);
+            const cStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1);
+            for (
+               let r = from.row + rStep, c = from.col + cStep;
+               r !== to.row || c !== to.col;
+               r += rStep, c += cStep
+            ) {
+               if (board[r][c]) return false;
+            }
+            return true;
+         }
+      }
+      // king attacks (adjacent)
+      if (piece.endsWith('_king')) {
+         return (
+            Math.abs(from.row - to.row) <= 1 &&
+            Math.abs(from.col - to.col) <= 1
+         );
+      }
+
+      return false;
+   }
+
+   function isInCheck(player: Player, board: Board): boolean {
+      const kingPos = findKing(player, board)!
+      const opponent = player === 'white' ? 'black' : 'white'
+
+      for (let r = 0; r < 8; r++) {
+         for (let c = 0; c < 8; c++) {
+            const piece = board[r][c]
+            if (!piece || (opponent === 'white' ? !piece.startsWith('w_') : !piece.startsWith('b_')))
+               continue
+
+            const from = { row: r, col: c }
+            if (canPieceAttack(piece, from, kingPos, board)) return true
+         }
+      }
+      return false
+   }
+
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
 
-      if (piece.endsWith('_pawn')) return isValidPawnMove(from, to);
-      if (piece.endsWith('_rook')) return isValidRookMove(from, to);
-      if (piece.endsWith('_knight')) return isValidKnightMove(from, to);
-      if (piece.endsWith('_bishop')) return isValidBishopMove(from, to);
-      if (piece.endsWith('_queen')) return isValidQueenMove(from, to);
-      if (piece.endsWith('_king')) return isValidKingMove(from, to);
+      let valid = false;
+      if (piece.endsWith('_pawn')) valid = isValidPawnMove(from, to);
+      else if (piece.endsWith('_rook')) valid = isValidRookMove(from, to);
+      else if (piece.endsWith('_knight')) valid = isValidKnightMove(from, to);
+      else if (piece.endsWith('_bishop')) valid = isValidBishopMove(from, to);
+      else if (piece.endsWith('_queen')) valid = isValidQueenMove(from, to);
+      else if (piece.endsWith('_king')) valid = isValidKingMove(from, to);
 
-      return false;
+      if (!valid) return false;
+
+      const simulated = simulateMove(board, from, to);
+      if (!simulated) return false;
+
+      return !isInCheck(currentPlayer, simulated);
    }
 
    function movePiece(from: Position, to: Position) {
@@ -362,7 +466,9 @@ const Chess = () => {
    return (
       <>
          <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
-            <div className="flex-1"></div>
+            <div className="flex-1">
+               {/* checkmate */}
+            </div>
             <div className="flex flex-col items-center max-w-[512px] w-full gap-2">
                <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
                   {board.map((row, rowIndex) => (
