@@ -466,8 +466,8 @@ const Chess = () => {
    return (
       <>
          <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
-            <div className="flex-1">
-               {/* checkmate */}
+            <div className="flex-1 grid place-items-center">
+               <div className="font-semibold text-xl">{currentPlayer}'s turn</div>
             </div>
             <div className="flex flex-col items-center max-w-[512px] w-full gap-2">
                <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
