@@ -60,10 +60,12 @@ const Chess = () => {
    const [hasMoved, setHasMoved] = useState<CastlingRights>(initialCastlingRights);
    const [gameState, setGameState] = useState<GameState>('playing');
    const [winner, setWinner] = useState<Player | null>(null);
+   const [promotionChoice, setPromotionChoice] = useState<Position>(null); // State for pawn promotion
 
    // Effect to check for checkmate or stalemate after a move
    useEffect(() => {
-      if (gameState !== 'playing') return;
+      // Don't check if a promotion is pending
+      if (gameState !== 'playing' || promotionChoice) return;
 
       if (!hasAnyLegalMoves()) {
          if (isInCheck(currentPlayer, board)) {
@@ -104,6 +106,7 @@ const Chess = () => {
       setHasMoved(initialCastlingRights);
       setGameState('playing');
       setWinner(null);
+      setPromotionChoice(null); // Reset promotion state
    }
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
@@ -111,8 +114,8 @@ const Chess = () => {
    }
 
    function clickAndMovePiece(row: number, col: number) {
-      // Don't allow moves if the game is over
-      if (gameState !== 'playing') return;
+      // Don't allow moves if the game is over or a promotion is pending
+      if (gameState !== 'playing' || promotionChoice) return;
 
       const clickedPiece = board[row][col]
 
@@ -389,7 +392,32 @@ const Chess = () => {
          }
       }
       if (isEnPassantCapture) newBoard[from.row][to.col] = null;
+
+      // Check for Pawn Promotion
+      const isPawn = piece?.endsWith('_pawn');
+      const promotionRank = currentPlayer === 'white' ? 0 : 7;
+      const isPromotion = isPawn && to.row === promotionRank;
+
       setBoard(newBoard);
+
+      if (isPromotion) {
+         // Pause the game and wait for the user to choose a promotion piece
+         setPromotionChoice(to);
+      } else {
+         // Continue the game normally
+         setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
+      }
+   }
+
+   function handlePromotion(promotedPiece: Piece) {
+      if (!promotionChoice) return;
+
+      const newBoard = board.map(r => [...r]);
+      newBoard[promotionChoice.row][promotionChoice.col] = promotedPiece;
+      setBoard(newBoard);
+
+      // Reset promotion state and continue the game
+      setPromotionChoice(null);
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
 
@@ -403,13 +431,18 @@ const Chess = () => {
       }
    }
 
+   const promotionPieceTypes: ('queen' | 'rook' | 'bishop' | 'knight')[] = ['queen', 'rook', 'bishop', 'knight'];
+
    return (
       <>
          <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
             <div className="flex-1 grid place-items-center">
                <div className="text-center">
-                  {gameState === 'playing' && (
+                  {gameState === 'playing' && !promotionChoice && (
                      <div className="font-semibold text-xl capitalize">{currentPlayer}'s turn</div>
+                  )}
+                  {promotionChoice && (
+                     <div className="font-semibold text-xl capitalize">Promote your Pawn!</div>
                   )}
                   {gameState === 'checkmate' && (
                      <div className="font-semibold text-xl capitalize">Checkmate! {winner} wins.</div>
@@ -427,7 +460,7 @@ const Chess = () => {
                   )}
                </div>
             </div>
-            <div className="flex flex-col items-center max-w-[512px] w-full gap-2">
+            <div className="flex flex-col items-center max-w-[512px] w-full gap-2 relative">
                <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
                   {board.map((row, rowIndex) => (
                      row.map((piece, colIndex) => (
@@ -440,7 +473,7 @@ const Chess = () => {
                               <img
                                  src={pieces[piece]}
                                  alt={piece}
-                                 className={`h-full p-[3%] select-none ${isCurrentPlayerPiece(piece) && gameState === 'playing' ? 'cursor-pointer' : 'cursor-default'}`}
+                                 className={`h-full p-[3%] select-none ${(isCurrentPlayerPiece(piece) && gameState === 'playing' && !promotionChoice) ? 'cursor-pointer' : 'cursor-default'}`}
                                  draggable={false}
                               />
                            )}
@@ -448,6 +481,25 @@ const Chess = () => {
                      ))
                   ))}
                </div>
+               {/* Promotion Modal */}
+               {promotionChoice && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center z-10">
+                     <div className="bg-neutral-100 p-4 rounded-lg flex gap-2 border-4 border-amber-600">
+                        {promotionPieceTypes.map(pieceType => {
+                           const pieceKey = `${currentPlayer.charAt(0)}_${pieceType}` as Piece;
+                           return (
+                              <div
+                                 key={pieceKey}
+                                 className="w-20 h-20 cursor-pointer hover:bg-neutral-300 p-1 rounded-md transition-colors"
+                                 onClick={() => handlePromotion(pieceKey)}
+                              >
+                                 <img src={pieces[pieceKey]} alt={pieceKey} className="w-full h-full" />
+                              </div>
+                           );
+                        })}
+                     </div>
+                  </div>
+               )}
             </div>
             <div className="flex-1 min-w-[100px] bg-white shadow-md rounded-lg"></div>
          </div>
