@@ -91,6 +91,32 @@ const Chess = () => {
       setSelectedPiece(null)
    }
 
+   // Helper function to check if the path between two squares is clear for sliding pieces
+   function isPathClear(from: Position, to: Position, board: Board): boolean {
+      if (!from || !to) return false;
+
+      const rowDiff = to.row - from.row;
+      const colDiff = to.col - from.col;
+
+      // Determine step direction
+      const rowStep = rowDiff === 0 ? 0 : (rowDiff > 0 ? 1 : -1);
+      const colStep = colDiff === 0 ? 0 : (colDiff > 0 ? 1 : -1);
+
+      // Check squares along the path (excluding the start and end squares)
+      let currRow = from.row + rowStep;
+      let currCol = from.col + colStep;
+
+      while (currRow !== to.row || currCol !== to.col) {
+         if (board[currRow][currCol] !== null) {
+            return false; // Path is blocked
+         }
+         currRow += rowStep;
+         currCol += colStep;
+      }
+
+      return true; // Path is clear
+   }
+
    function isValidPawnMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
 
@@ -103,6 +129,7 @@ const Chess = () => {
       const isTargetEmpty = board[to.row][to.col] === null
 
       if (oneStepForward && isTargetEmpty) return true
+      // Check if the square in front is also empty for a two-step move
       if (twoStepForward && isTargetEmpty && board[from.row + direction][from.col] === null) return true
 
       // diagonal capture
@@ -116,7 +143,7 @@ const Chess = () => {
       const isEnPassantCapture =
          Math.abs(to.col - from.col) === 1 &&
          to.row === from.row + direction &&
-         board[to.row][to.col] === null &&
+         board[to.row][to.col] === null && // Target square must be empty
          enPassantTarget &&
          enPassantTarget.row === to.row &&
          enPassantTarget.col === to.col
@@ -135,16 +162,8 @@ const Chess = () => {
 
       if (!isVerticalOrHorizontal) return false
 
-      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1);
-      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1);
-
-      for (
-         let currRow = from.row + rowStep, currCol = from.col + colStep;
-         currRow !== to.row || currCol !== to.col;
-         currRow += rowStep, currCol += colStep
-      ) {
-         if (board[currRow][currCol] !== null) return false;
-      }
+      // Check if path is clear using the helper
+      if (!isPathClear(from, to, board)) return false;
 
       // capture enemy piece not your own piece
       const target = board[to.row][to.col];
@@ -175,16 +194,8 @@ const Chess = () => {
 
       if (!isBishopMove) return false
 
-      const rowStep = (to.row - from.row) > 0 ? 1 : -1;
-      const colStep = (to.col - from.col) > 0 ? 1 : -1;
-
-      for (
-         let r = from.row + rowStep, c = from.col + colStep;
-         r !== to.row;
-         r += rowStep, c += colStep
-      ) {
-         if (board[r][c]) return false; // Blocked
-      }
+      // Check if path is clear using the helper
+      if (!isPathClear(from, to, board)) return false;
 
       // capture
       const target = board[to.row][to.col];
@@ -199,20 +210,12 @@ const Chess = () => {
       const isQueenMove =
          from.row === to.row || // horizontal
          from.col === to.col || // vertical
-         Math.abs(from.row - to.row) === Math.abs(from.col - to.col)
+         Math.abs(from.row - to.row) === Math.abs(from.col - to.col) // diagonal
 
       if (!isQueenMove) return false
 
-      const rowStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1)
-      const colStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1)
-
-      for (
-         let r = from.row + rowStep, c = from.col + colStep;
-         r !== to.row || c !== to.col; // loop while this is the condition
-         r += rowStep, c += colStep
-      ) {
-         if (board[r][c]) return false; // if there is a piece return false
-      }
+      // Check if path is clear using the helper
+      if (!isPathClear(from, to, board)) return false;
 
       // capture
       const target = board[to.row][to.col];
@@ -313,31 +316,15 @@ const Chess = () => {
       // bishop attacks
       if (piece.endsWith('_bishop') || piece.endsWith('_queen')) {
          if (Math.abs(from.row - to.row) === Math.abs(from.col - to.col)) {
-            const rStep = to.row > from.row ? 1 : -1;
-            const cStep = to.col > from.col ? 1 : -1;
-            for (
-               let r = from.row + rStep, c = from.col + cStep;
-               r !== to.row;
-               r += rStep, c += cStep
-            ) {
-               if (board[r][c]) return false;
-            }
-            return true;
+            // Use path clear helper for diagonal attacks
+            return isPathClear(from, to, board);
          }
       }
       // rook attacks
       if (piece.endsWith('_rook') || piece.endsWith('_queen')) {
          if (from.row === to.row || from.col === to.col) {
-            const rStep = to.row === from.row ? 0 : (to.row > from.row ? 1 : -1);
-            const cStep = to.col === from.col ? 0 : (to.col > from.col ? 1 : -1);
-            for (
-               let r = from.row + rStep, c = from.col + cStep;
-               r !== to.row || c !== to.col;
-               r += rStep, c += cStep
-            ) {
-               if (board[r][c]) return false;
-            }
-            return true;
+            // Use path clear helper for horizontal/vertical attacks
+            return isPathClear(from, to, board);
          }
       }
       // king attacks (adjacent)
