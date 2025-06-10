@@ -61,12 +61,66 @@ const Chess = () => {
    const [gameState, setGameState] = useState<GameState>('playing');
    const [winner, setWinner] = useState<Player | null>(null);
    const [promotionChoice, setPromotionChoice] = useState<Position>(null); // State for pawn promotion
+   const [boardHistory, setBoardHistory] = useState<string[]>([]); // State to track board history for threefold repetition
 
-   // Effect to check for checkmate or stalemate after a move
+   // Helper to get a string representation of the board state
+   function getBoardStateString(currentBoard: Board): string {
+      return currentBoard.map(row => row.map(piece => piece || 'null').join(',')).join(';');
+   }
+
+   // Helper to check for insufficient material
+   function isInsufficientMaterial(currentBoard: Board): boolean {
+      const pieceCounts: { [key in Piece]?: number } = {};
+      let totalPieces = 0;
+
+      for (let r = 0; r < 8; r++) {
+         for (let c = 0; c < 8; c++) {
+            const piece = currentBoard[r][c];
+            if (piece) {
+               pieceCounts[piece] = (pieceCounts[piece] || 0) + 1;
+               totalPieces++;
+            }
+         }
+      }
+
+      // Simple cases for insufficient material:
+      // King vs King
+      if (totalPieces === 2 && pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1) {
+         return true;
+      }
+      // King and Bishop vs King
+      if (totalPieces === 3 && ((pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1 && pieceCounts['w_bishop'] === 1) || (pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1 && pieceCounts['b_bishop'] === 1))) {
+         return true;
+      }
+      // King and Knight vs King
+      if (totalPieces === 3 && ((pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1 && pieceCounts['w_knight'] === 1) || (pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1 && pieceCounts['b_knight'] === 1))) {
+         return true;
+      }
+      return false;
+   }
+
+
+   // Effect to check for checkmate, stalemate, or draw conditions after a move
    useEffect(() => {
-      // Don't check if a promotion is pending
+      // Don't check if the game is already over or a promotion is pending
       if (gameState !== 'playing' || promotionChoice) return;
 
+      const currentBoardStateString = getBoardStateString(board);
+
+      // Check for Threefold Repetition
+      const repetitionCount = boardHistory.filter(state => state === currentBoardStateString).length;
+      if (repetitionCount >= 3) {
+         setGameState('stalemate');
+         return;
+      }
+
+      // Check for Insufficient Material
+      if (isInsufficientMaterial(board)) {
+         setGameState('stalemate');
+         return; 
+      }
+
+      // Check for Checkmate or Stalemate (no legal moves)
       if (!hasAnyLegalMoves()) {
          if (isInCheck(currentPlayer, board)) {
             setGameState('checkmate');
@@ -75,8 +129,8 @@ const Chess = () => {
             setGameState('stalemate');
          }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps 
-   }, [board, currentPlayer, gameState]); // Reruns whenever the board or player changes
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [board, currentPlayer, gameState, promotionChoice, boardHistory]); // Added boardHistory to dependencies
 
    function hasAnyLegalMoves(): boolean {
       for (let r = 0; r < 8; r++) {
@@ -107,6 +161,7 @@ const Chess = () => {
       setGameState('playing');
       setWinner(null);
       setPromotionChoice(null); // Reset promotion state
+      setBoardHistory([]); // Reset board history
    }
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
@@ -399,6 +454,9 @@ const Chess = () => {
       const isPromotion = isPawn && to.row === promotionRank;
 
       setBoard(newBoard);
+      // Add the new board state to history AFTER setting the board
+      setBoardHistory(prev => [...prev, getBoardStateString(newBoard)]);
+
 
       if (isPromotion) {
          // Pause the game and wait for the user to choose a promotion piece
