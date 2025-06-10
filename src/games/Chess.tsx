@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const pieces = {
    b_rook: '/chess_piece/black/black_rook.svg',
@@ -30,6 +30,16 @@ type CastlingRights = {
    b_rook_king: boolean;
    b_rook_queen: boolean;
 }
+type GameState = 'playing' | 'checkmate' | 'stalemate';
+
+const initialCastlingRights: CastlingRights = {
+   w_king: false,
+   b_king: false,
+   w_rook_king: false,
+   w_rook_queen: false,
+   b_rook_king: false,
+   b_rook_queen: false,
+};
 
 const createBoard = (): Board => {
    const initialBoard: Board = Array(8).fill(null).map(() => Array(8).fill(null))
@@ -44,26 +54,68 @@ const createBoard = (): Board => {
 
 const Chess = () => {
    const [board, setBoard] = useState<Board>(createBoard)
-   const [currentPlayer, setCurrentPlayer] = useState<Player>('white') // currentPlayer is white by default
+   const [currentPlayer, setCurrentPlayer] = useState<Player>('white')
    const [selectedPiece, setSelectedPiece] = useState<Position>(null)
    const [enPassantTarget, setEnPassantTarget] = useState<Position>(null)
-   const [hasMoved, setHasMoved] = useState<CastlingRights>({
-      w_king: false,
-      b_king: false,
-      w_rook_king: false,
-      w_rook_queen: false,
-      b_rook_king: false,
-      b_rook_queen: false,
-   });
+   const [hasMoved, setHasMoved] = useState<CastlingRights>(initialCastlingRights);
+   const [gameState, setGameState] = useState<GameState>('playing');
+   const [winner, setWinner] = useState<Player | null>(null);
+
+   // Effect to check for checkmate or stalemate after a move
+   useEffect(() => {
+      if (gameState !== 'playing') return;
+
+      if (!hasAnyLegalMoves()) {
+         if (isInCheck(currentPlayer, board)) {
+            setGameState('checkmate');
+            setWinner(currentPlayer === 'white' ? 'black' : 'white');
+         } else {
+            setGameState('stalemate');
+         }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps 
+   }, [board, currentPlayer, gameState]); // Reruns whenever the board or player changes
+
+   function hasAnyLegalMoves(): boolean {
+      for (let r = 0; r < 8; r++) {
+         for (let c = 0; c < 8; c++) {
+            const piece = board[r][c];
+            if (piece && isCurrentPlayerPiece(piece)) {
+               const from = { row: r, col: c };
+               // Check all possible destination squares for this piece
+               for (let toR = 0; toR < 8; toR++) {
+                  for (let toC = 0; toC < 8; toC++) {
+                     if (isValidMove(piece, from, { row: toR, col: toC })) {
+                        return true; // Found at least one legal move
+                     }
+                  }
+               }
+            }
+         }
+      }
+      return false; // No legal moves found for any piece
+   }
+
+   function resetGame() {
+      setBoard(createBoard());
+      setCurrentPlayer('white');
+      setSelectedPiece(null);
+      setEnPassantTarget(null);
+      setHasMoved(initialCastlingRights);
+      setGameState('playing');
+      setWinner(null);
+   }
 
    function isCurrentPlayerPiece(piece: Piece): boolean {
       return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
-   } // piece.startsWith returns true or false value
+   }
 
    function clickAndMovePiece(row: number, col: number) {
+      // Don't allow moves if the game is over
+      if (gameState !== 'playing') return;
+
       const clickedPiece = board[row][col]
 
-      // if there is no selected piece then select a piece that is owned by current player
       if (!selectedPiece) {
          if (clickedPiece && isCurrentPlayerPiece(clickedPiece)) {
             setSelectedPiece({ row, col })
@@ -71,203 +123,139 @@ const Chess = () => {
          return
       }
 
-      // if clicking the same piece then deselect
       if (selectedPiece.row === row && selectedPiece.col === col) {
          setSelectedPiece(null)
          return
       }
 
-      // if click another piece then select it instead
       if (clickedPiece && isCurrentPlayerPiece(clickedPiece)) {
          setSelectedPiece({ row, col })
          return
       }
 
-      // attempt move
-      const piece = board[selectedPiece.row][selectedPiece.col] // outputs piece like 'w_pawn'
+      const piece = board[selectedPiece.row][selectedPiece.col]
       if (piece && isValidMove(piece, selectedPiece, { row, col })) {
          movePiece(selectedPiece, { row, col })
       }
       setSelectedPiece(null)
    }
 
-   // Helper function to check if the path between two squares is clear for sliding pieces
    function isPathClear(from: Position, to: Position, board: Board): boolean {
       if (!from || !to) return false;
-
       const rowDiff = to.row - from.row;
       const colDiff = to.col - from.col;
-
-      // Determine step direction
       const rowStep = rowDiff === 0 ? 0 : (rowDiff > 0 ? 1 : -1);
       const colStep = colDiff === 0 ? 0 : (colDiff > 0 ? 1 : -1);
-
-      // Check squares along the path (excluding the start and end squares)
       let currRow = from.row + rowStep;
       let currCol = from.col + colStep;
-
       while (currRow !== to.row || currCol !== to.col) {
          if (board[currRow][currCol] !== null) {
-            return false; // Path is blocked
+            return false;
          }
          currRow += rowStep;
          currCol += colStep;
       }
-
-      return true; // Path is clear
+      return true;
    }
 
    function isValidPawnMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
       const direction = currentPlayer === 'white' ? -1 : 1
       const startRow = currentPlayer === 'white' ? 6 : 1
-
-      // pawn move
       const oneStepForward = to.row === from.row + direction && to.col === from.col
       const twoStepForward = from.row === startRow && to.row === from.row + 2 * direction && to.col === from.col
       const isTargetEmpty = board[to.row][to.col] === null
-
       if (oneStepForward && isTargetEmpty) return true
-      // Check if the square in front is also empty for a two-step move
       if (twoStepForward && isTargetEmpty && board[from.row + direction][from.col] === null) return true
-
-      // diagonal capture
       const isDiagonalCapture =
          Math.abs(to.col - from.col) === 1 &&
          to.row === from.row + direction &&
          board[to.row][to.col] !== null &&
          !isCurrentPlayerPiece(board[to.row][to.col]!)
-
-      // en passant capture
       const isEnPassantCapture =
          Math.abs(to.col - from.col) === 1 &&
          to.row === from.row + direction &&
-         board[to.row][to.col] === null && // Target square must be empty
+         board[to.row][to.col] === null &&
          enPassantTarget &&
          enPassantTarget.row === to.row &&
          enPassantTarget.col === to.col
-
       if (isDiagonalCapture || isEnPassantCapture) return true
-
       return false
    }
 
    function isValidRookMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
-      const isVerticalOrHorizontal =
-         from.row === to.row || // horizontal
-         from.col === to.col  // vertical
-
+      const isVerticalOrHorizontal = from.row === to.row || from.col === to.col
       if (!isVerticalOrHorizontal) return false
-
-      // Check if path is clear using the helper
       if (!isPathClear(from, to, board)) return false;
-
-      // capture enemy piece not your own piece
       const target = board[to.row][to.col];
       if (target && isCurrentPlayerPiece(target)) return false;
-
       return true;
    }
 
    function isValidKnightMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
       const isKnightMove =
-         Math.abs(from.row - to.row) === 2 && Math.abs(from.col - to.col) === 1 ||
-         Math.abs(from.col - to.col) === 2 && Math.abs(from.row - to.row) === 1
-
+         (Math.abs(from.row - to.row) === 2 && Math.abs(from.col - to.col) === 1) ||
+         (Math.abs(from.col - to.col) === 2 && Math.abs(from.row - to.row) === 1)
       if (!isKnightMove) return false
-
       const target = board[to.row][to.col]
       if (target && isCurrentPlayerPiece(target)) return false
-
       return true
    }
 
    function isValidBishopMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
       const isBishopMove = Math.abs(from.row - to.row) === Math.abs(from.col - to.col)
-
       if (!isBishopMove) return false
-
-      // Check if path is clear using the helper
       if (!isPathClear(from, to, board)) return false;
-
-      // capture
       const target = board[to.row][to.col];
       if (target && isCurrentPlayerPiece(target)) return false;
-
       return true
    }
 
    function isValidQueenMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
       const isQueenMove =
-         from.row === to.row || // horizontal
-         from.col === to.col || // vertical
-         Math.abs(from.row - to.row) === Math.abs(from.col - to.col) // diagonal
-
+         from.row === to.row ||
+         from.col === to.col ||
+         Math.abs(from.row - to.row) === Math.abs(from.col - to.col)
       if (!isQueenMove) return false
-
-      // Check if path is clear using the helper
       if (!isPathClear(from, to, board)) return false;
-
-      // capture
       const target = board[to.row][to.col];
       if (target && isCurrentPlayerPiece(target)) return false;
-
       return true
    }
 
    function isValidCastling(from: Position, to: Position): boolean {
       if (!from || !to) return false;
-
       const kingMoved = currentPlayer === 'white' ? hasMoved.w_king : hasMoved.b_king
       const rookMoved = currentPlayer === 'white'
          ? (to.col > from.col ? hasMoved.w_rook_king : hasMoved.w_rook_queen)
          : (to.col > from.col ? hasMoved.b_rook_king : hasMoved.b_rook_queen)
-
       if (kingMoved || rookMoved) return false
-
       const castleDirection = to.col > from.col ? 1 : -1
       for (let c = from.col + castleDirection; c !== to.col; c += castleDirection) {
          if (board[from.row][c] !== null) return false
       }
-
-      // cannot castle out of or through check
       if (isInCheck(currentPlayer, board)) return false
       for (let step = 1; step <= 2; step++) {
          const col = from.col + castleDirection * step
          const testBoard = simulateMove(board, from, { row: from.row, col })
          if (isInCheck(currentPlayer, testBoard!)) return false
       }
-
       return true
    }
 
    function isValidKingMove(from: Position, to: Position): boolean {
       if (!from || !to) return false
-
-      // check for castling first
       if (Math.abs(from.col - to.col) === 2 && from.row === to.row) {
          return isValidCastling(from, to)
       }
-
-      // regular king move
-      const isKingMove =
-         Math.abs(from.row - to.row) <= 1 &&
-         Math.abs(from.col - to.col) <= 1;
-
+      const isKingMove = Math.abs(from.row - to.row) <= 1 && Math.abs(from.col - to.col) <= 1;
       if (!isKingMove) return false
-
       const target = board[to.row][to.col]
       if (target && isCurrentPlayerPiece(target)) return false
-
       return true
    }
 
@@ -283,7 +271,7 @@ const Chess = () => {
       const king = player === 'white' ? 'w_king' : 'b_king'
       for (let r = 0; r < 8; r++) {
          for (let c = 0; c < 8; c++) {
-            if (board[r][c] === king) return { row: r, col: c } // return the king position
+            if (board[r][c] === king) return { row: r, col: c }
          }
       }
       return null
@@ -302,52 +290,38 @@ const Chess = () => {
 
    function canPieceAttack(piece: Piece, from: Position, to: Position, board: Board): boolean {
       if (!from || !to) return false;
-
-      // pawn attacks
       if (piece.endsWith('_pawn')) {
          return doesPawnAttack(from, to, board);
       }
-      // knight attacks
       if (piece.endsWith('_knight')) {
-         const dr = Math.abs(from.row - to.row),
-            dc = Math.abs(from.col - to.col);
+         const dr = Math.abs(from.row - to.row), dc = Math.abs(from.col - to.col);
          return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
       }
-      // bishop attacks
       if (piece.endsWith('_bishop') || piece.endsWith('_queen')) {
          if (Math.abs(from.row - to.row) === Math.abs(from.col - to.col)) {
-            // Use path clear helper for diagonal attacks
             return isPathClear(from, to, board);
          }
       }
-      // rook attacks
       if (piece.endsWith('_rook') || piece.endsWith('_queen')) {
          if (from.row === to.row || from.col === to.col) {
-            // Use path clear helper for horizontal/vertical attacks
             return isPathClear(from, to, board);
          }
       }
-      // king attacks (adjacent)
       if (piece.endsWith('_king')) {
-         return (
-            Math.abs(from.row - to.row) <= 1 &&
-            Math.abs(from.col - to.col) <= 1
-         );
+         return (Math.abs(from.row - to.row) <= 1 && Math.abs(from.col - to.col) <= 1);
       }
-
       return false;
    }
 
    function isInCheck(player: Player, board: Board): boolean {
       const kingPos = findKing(player, board)!
+      if (!kingPos) return false; // Should not happen in a real game
       const opponent = player === 'white' ? 'black' : 'white'
-
       for (let r = 0; r < 8; r++) {
          for (let c = 0; c < 8; c++) {
             const piece = board[r][c]
             if (!piece || (opponent === 'white' ? !piece.startsWith('w_') : !piece.startsWith('b_')))
                continue
-
             const from = { row: r, col: c }
             if (canPieceAttack(piece, from, kingPos, board)) return true
          }
@@ -357,7 +331,6 @@ const Chess = () => {
 
    function isValidMove(piece: Piece, from: Position, to: Position): boolean {
       if (!from || !to) return false;
-
       let valid = false;
       if (piece.endsWith('_pawn')) valid = isValidPawnMove(from, to);
       else if (piece.endsWith('_rook')) valid = isValidRookMove(from, to);
@@ -365,26 +338,19 @@ const Chess = () => {
       else if (piece.endsWith('_bishop')) valid = isValidBishopMove(from, to);
       else if (piece.endsWith('_queen')) valid = isValidQueenMove(from, to);
       else if (piece.endsWith('_king')) valid = isValidKingMove(from, to);
-
       if (!valid) return false;
-
       const simulated = simulateMove(board, from, to);
       if (!simulated) return false;
-
       return !isInCheck(currentPlayer, simulated);
    }
 
    function movePiece(from: Position, to: Position) {
       if (!from || !to) return;
       const piece = board[from.row][from.col]
-
-      // 1. Update hasMoved if king/rook is moving from its original square
       setHasMoved(prev => {
          const update: Partial<CastlingRights> = {};
-
          if (piece === 'w_king') update.w_king = true;
          if (piece === 'b_king') update.b_king = true;
-
          if (piece === 'w_rook') {
             if (from.row === 7 && from.col === 0) update.w_rook_queen = true;
             if (from.row === 7 && from.col === 7) update.w_rook_king = true;
@@ -393,34 +359,25 @@ const Chess = () => {
             if (from.row === 0 && from.col === 0) update.b_rook_queen = true;
             if (from.row === 0 && from.col === 7) update.b_rook_king = true;
          }
-
          return { ...prev, ...update };
       });
-
-      // 2. Compute en passant target
       const direction = currentPlayer === 'white' ? -1 : 1;
-      const canBeCapturedEnPassant = Math.abs(from.row - to.row) === 2
-
+      const canBeCapturedEnPassant = piece?.endsWith('_pawn') && Math.abs(from.row - to.row) === 2
       const isEnPassantCapture =
+         piece?.endsWith('_pawn') &&
          Math.abs(to.col - from.col) === 1 &&
-         to.row === from.row + direction &&
          board[to.row][to.col] === null &&
          enPassantTarget &&
          enPassantTarget.row === to.row &&
          enPassantTarget.col === to.col;
-
       if (canBeCapturedEnPassant) {
-         setEnPassantTarget({ row: from.row + direction, col: from.col }); // set square as en passant target
+         setEnPassantTarget({ row: from.row + direction, col: from.col });
       } else {
          setEnPassantTarget(null);
       }
-
-      // 3. Move/removal of piece
       const newBoard = board.map(row => [...row]);
       newBoard[to.row][to.col] = newBoard[from.row][from.col];
       newBoard[from.row][from.col] = null;
-
-      // 3a. Handle Castling
       if ((piece === "w_king" || piece === "b_king") && Math.abs(from.col - to.col) === 2) {
          const row = from.row
          if (to.col > from.col) {
@@ -431,10 +388,7 @@ const Chess = () => {
             newBoard[row][0] = null
          }
       }
-
-      if (isEnPassantCapture) newBoard[from.row][to.col] = null; // remove captured pawn
-
-      // 4. update board state and change player
+      if (isEnPassantCapture) newBoard[from.row][to.col] = null;
       setBoard(newBoard);
       setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
    }
@@ -442,7 +396,6 @@ const Chess = () => {
    function isSquareSelected(row: number, col: number): string {
       const isLight = (row + col) % 2 === 0
       const isSelected = selectedPiece?.row === row && selectedPiece?.col === col
-
       if (isSelected) {
          return isLight ? 'bg-neutral-300' : 'bg-amber-900'
       } else {
@@ -454,7 +407,25 @@ const Chess = () => {
       <>
          <div className="max-w-[1250px] mx-auto flex justify-center p-4 gap-4 select-none">
             <div className="flex-1 grid place-items-center">
-               <div className="font-semibold text-xl">{currentPlayer}'s turn</div>
+               <div className="text-center">
+                  {gameState === 'playing' && (
+                     <div className="font-semibold text-xl capitalize">{currentPlayer}'s turn</div>
+                  )}
+                  {gameState === 'checkmate' && (
+                     <div className="font-semibold text-xl capitalize">Checkmate! {winner} wins.</div>
+                  )}
+                  {gameState === 'stalemate' && (
+                     <div className="font-semibold text-xl">Stalemate! It's a draw.</div>
+                  )}
+                  {gameState !== 'playing' && (
+                     <button
+                        onClick={resetGame}
+                        className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
+                     >
+                        Play Again
+                     </button>
+                  )}
+               </div>
             </div>
             <div className="flex flex-col items-center max-w-[512px] w-full gap-2">
                <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
@@ -469,7 +440,7 @@ const Chess = () => {
                               <img
                                  src={pieces[piece]}
                                  alt={piece}
-                                 className={`h-full p-[3%] select-none ${isCurrentPlayerPiece(piece) ? 'cursor-pointer' : 'cursor-default'}`}
+                                 className={`h-full p-[3%] select-none ${isCurrentPlayerPiece(piece) && gameState === 'playing' ? 'cursor-pointer' : 'cursor-default'}`}
                                  draggable={false}
                               />
                            )}
