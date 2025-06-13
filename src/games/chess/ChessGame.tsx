@@ -1,57 +1,5 @@
 import { useState, useEffect } from "react"
 
-const pieces = {
-   b_rook: '/chess_piece/black/black_rook.svg',
-   b_knight: '/chess_piece/black/black_knight.svg',
-   b_bishop: '/chess_piece/black/black_bishop.svg',
-   b_queen: '/chess_piece/black/black_queen.svg',
-   b_king: '/chess_piece/black/black_king.svg',
-   b_pawn: '/chess_piece/black/black_pawn.svg',
-   w_rook: '/chess_piece/white/white_rook.svg',
-   w_knight: '/chess_piece/white/white_knight.svg',
-   w_bishop: '/chess_piece/white/white_bishop.svg',
-   w_queen: '/chess_piece/white/white_queen.svg',
-   w_king: '/chess_piece/white/white_king.svg',
-   w_pawn: '/chess_piece/white/white_pawn.svg',
-}
-
-type Piece = keyof typeof pieces
-type Board = (Piece | null)[][]
-type Player = 'white' | 'black'
-type Position = {
-   row: number,
-   col: number
-} | null
-type CastlingRights = {
-   w_king: boolean;
-   b_king: boolean;
-   w_rook_king: boolean;
-   w_rook_queen: boolean;
-   b_rook_king: boolean;
-   b_rook_queen: boolean;
-}
-type GameState = 'playing' | 'checkmate' | 'stalemate';
-
-const initialCastlingRights: CastlingRights = {
-   w_king: false,
-   b_king: false,
-   w_rook_king: false,
-   w_rook_queen: false,
-   b_rook_king: false,
-   b_rook_queen: false,
-};
-
-const createBoard = (): Board => {
-   const initialBoard: Board = Array(8).fill(null).map(() => Array(8).fill(null))
-
-   initialBoard[0] = ['b_rook', 'b_knight', 'b_bishop', 'b_queen', 'b_king', 'b_bishop', 'b_knight', 'b_rook']
-   initialBoard[1] = Array(8).fill('b_pawn')
-   initialBoard[6] = Array(8).fill('w_pawn')
-   initialBoard[7] = ['w_rook', 'w_knight', 'w_bishop', 'w_queen', 'w_king', 'w_bishop', 'w_knight', 'w_rook']
-
-   return initialBoard
-}
-
 const Chess = () => {
    const [board, setBoard] = useState<Board>(createBoard)
    const [currentPlayer, setCurrentPlayer] = useState<Player>('white')
@@ -162,10 +110,6 @@ const Chess = () => {
       setWinner(null);
       setPromotionChoice(null); // Reset promotion state
       setBoardHistory([]); // Reset board history
-   }
-
-   function isCurrentPlayerPiece(piece: Piece): boolean {
-      return currentPlayer === 'white' ? piece.startsWith('w_') : piece.startsWith('b_')
    }
 
    function clickAndMovePiece(row: number, col: number) {
