@@ -1,10 +1,10 @@
-import { useState } from "react"
-import type { Board } from "../core_logic/types"
-import { createBoard } from "../core_logic/utils/create_board"
 import { pieces } from "../core_logic/constants"
+import { useChessState } from "../core_logic/useHooks"
+import { useClickAndMovePiece } from "../core_logic/utils/useClickAndMovePiece"
 
 const ChessGame = () => {
-   const [board, setBoard] = useState<Board>(createBoard)
+   const { board } = useChessState()
+   const { clickAndMovePiece } = useClickAndMovePiece()
 
    return (
       <>
@@ -12,8 +12,8 @@ const ChessGame = () => {
             {board.map((row, rowIndex) => (
                row.map((piece, colIndex) => (
                   <div
-                     key={`${rowIndex}_${colIndex}`}
-                     // onClick={}
+                     key={`${rowIndex}-${colIndex}`}
+                     onClick={() => clickAndMovePiece(rowIndex, colIndex)}
                      className={`aspect-square grid place-items-center ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}`}
                   >
                      {piece && (
