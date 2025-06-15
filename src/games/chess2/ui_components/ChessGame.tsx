@@ -1,10 +1,9 @@
+import { useChessStore } from "../core_logic/chessStore"
 import { pieces } from "../core_logic/constants"
-import { useChessState } from "../core_logic/useHooks"
-import { useClickAndMovePiece } from "../core_logic/utils/useClickAndMovePiece"
+import { clickAndMovePiece } from "../core_logic/utils/clickAndMovePiece"
 
 const ChessGame = () => {
-   const { board } = useChessState()
-   const { clickAndMovePiece } = useClickAndMovePiece()
+   const board = useChessStore((state) => state.board)
 
    return (
       <>
@@ -21,6 +20,7 @@ const ChessGame = () => {
                            src={pieces[piece]}
                            alt={piece}
                            className="h-full p-[3%] select-none"
+                           draggable={false}
                         />
                      )}
                   </div>
