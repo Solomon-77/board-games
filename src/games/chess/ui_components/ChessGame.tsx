@@ -14,8 +14,8 @@ const ChessGame = () => {
    const gameState = useChessStore((state) => state.gameState);
    const boardHistory = useChessStore((state) => state.boardHistory);
    const promotionChoice = useChessStore((state) => state.promotionChoice);
-   const setGameState = useChessStore((state) => state.setGameState);
-   const setWinner = useChessStore((state) => state.setWinner);
+
+   const { setGameState, setWinner } = useChessStore.getState()
 
    useEffect(() => {
       // Don't check if the game is already over or a promotion is pending
