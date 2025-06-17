@@ -1,9 +1,11 @@
 import { useChessStore } from "../chessStore";
 import type { CastlingRights, Position } from "../types";
+import { getBoardStateString } from "./getBoardStateString";
 import { simulateMove } from "./simulateMove";
 
 export function movePiece(from: Position, to: Position) {
-   const { board, setBoard, currentPlayer, setCurrentPlayer, enPassantTarget, setEnPassantTarget, setHasMoved } = useChessStore.getState()
+   const { board, setBoard, currentPlayer, setCurrentPlayer, enPassantTarget, setEnPassantTarget, setHasMoved, setPromotionChoice, setBoardHistory } = useChessStore.getState()
+
    if (!from || !to) return;
    const piece = board[from.row][from.col]
 
@@ -57,5 +59,20 @@ export function movePiece(from: Position, to: Position) {
    if (isEnPassantCapture) newBoard[from.row][to.col] = null;
    setBoard(newBoard)
 
-   setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
+   // Check for Pawn Promotion
+   const isPawn = piece?.endsWith('_pawn');
+   const promotionRank = currentPlayer === 'white' ? 0 : 7;
+   const isPromotion = isPawn && to.row === promotionRank;
+
+   setBoard(newBoard);
+   // Add the new board state to history AFTER setting the board
+   setBoardHistory(prev => [...prev, getBoardStateString(newBoard)]);
+
+   if (isPromotion) {
+      // Pause the game and wait for the user to choose a promotion piece
+      setPromotionChoice(to);
+   } else {
+      // Continue the game normally
+      setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
+   }
 }

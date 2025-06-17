@@ -13,7 +13,6 @@ export function isInsufficientMaterial(currentBoard: Board): boolean {
          }
       }
    }
-
    // King vs King
    if (totalPieces === 2 && pieceCounts['w_king'] === 1 && pieceCounts['b_king'] === 1) {
       return true;

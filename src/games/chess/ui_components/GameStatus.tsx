@@ -1,14 +1,12 @@
-import type { GameState, Player } from "../core";
+import { useChessStore } from "../core_logic/chessStore"
+import { resetGame } from "../core_logic/utils/resetGame"
 
-type GameStatusProps = {
-   gameState: GameState;
-   currentPlayer: Player;
-   winner: Player | null;
-   promotionChoice: boolean;
-   resetGame: () => void;
-};
+const GameStatus = () => {
+   const gameState = useChessStore((state) => state.gameState)
+   const currentPlayer = useChessStore((state) => state.currentPlayer)
+   const promotionChoice = useChessStore((state) => state.promotionChoice)
+   const winner = useChessStore((state) => state.winner)
 
-export const GameStatus = ({ gameState, currentPlayer, winner, promotionChoice, resetGame }: GameStatusProps) => {
    return (
       <div className="flex-1 grid place-items-center">
          <div className="text-center">
@@ -34,5 +32,7 @@ export const GameStatus = ({ gameState, currentPlayer, winner, promotionChoice, 
             )}
          </div>
       </div>
-   );
-};
+   )
+}
+
+export default GameStatus

@@ -1,4 +1,4 @@
-import type { CastlingRights, PromotionPiece } from "./types"
+import type { CastlingRights, PromotionPiece } from "./types";
 
 export const pieces = {
    b_rook: '/chess_piece/black/black_rook.svg',
@@ -21,8 +21,8 @@ export const initialCastlingRights: CastlingRights = {
    w_rook_king: false,
    w_rook_queen: false,
    b_rook_king: false,
-   b_rook_queen: false
-}
+   b_rook_queen: false,
+};
 
 export const promotionPieceTypes: PromotionPiece[] = [
    'queen', 'rook', 'bishop', 'knight'

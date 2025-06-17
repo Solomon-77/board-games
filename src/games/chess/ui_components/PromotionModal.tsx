@@ -1,12 +1,11 @@
-import { pieces, promotionPieceTypes } from "../core";
-import type { Piece, Player } from "../core";
+import { useChessStore } from "../core_logic/chessStore";
+import { pieces, promotionPieceTypes } from "../core_logic/constants";
+import type { Piece } from "../core_logic/types";
+import { handlePromotion } from "../core_logic/utils/handlePromotion";
 
-type PromotionModalProps = {
-   currentPlayer: Player;
-   handlePromotion: (piece: Piece) => void;
-};
+const PromotionModal = () => {
+   const currentPlayer = useChessStore((state) => state.currentPlayer)
 
-export const PromotionModal = ({ currentPlayer, handlePromotion }: PromotionModalProps) => {
    return (
       <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center z-10">
          <div className="bg-neutral-100 p-4 rounded-lg flex gap-2 border-4 border-amber-600">
@@ -24,5 +23,7 @@ export const PromotionModal = ({ currentPlayer, handlePromotion }: PromotionModa
             })}
          </div>
       </div>
-   );
-};
+   )
+}
+
+export default PromotionModal
