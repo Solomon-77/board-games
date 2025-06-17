@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import type { Board, Player, Position } from './types'
+import type { Board, CastlingRights, Player, Position } from './types'
 import { createBoard } from './utils/createBoard'
+import { initialCastlingRights } from './constants'
 
 interface ChessState {
    board: Board
@@ -11,6 +12,8 @@ interface ChessState {
    setSelectedPiece: (pos: Position | null) => void
    enPassantTarget: Position | null
    setEnPassantTarget: (pos: Position | null) => void
+   hasMoved: CastlingRights
+   setHasMoved: (updater: CastlingRights | ((prev: CastlingRights) => CastlingRights)) => void
 }
 
 export const useChessStore = create<ChessState>((set) => ({
@@ -21,5 +24,9 @@ export const useChessStore = create<ChessState>((set) => ({
    selectedPiece: null,
    setSelectedPiece: (pos) => set({ selectedPiece: pos }),
    enPassantTarget: null,
-   setEnPassantTarget: (pos) => set({ enPassantTarget: pos })
+   setEnPassantTarget: (pos) => set({ enPassantTarget: pos }),
+   hasMoved: initialCastlingRights,
+   setHasMoved: (updater) => set(state => ({
+      hasMoved: typeof updater === 'function' ? updater(state.hasMoved) : updater
+   }))
 }))
