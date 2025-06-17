@@ -10,12 +10,14 @@ import PromotionModal from "./PromotionModal"
 
 const ChessGame = () => {
    const board = useChessStore((state) => state.board);
-   const currentPlayer = useChessStore((state) => state.currentPlayer);
-   const gameState = useChessStore((state) => state.gameState);
-   const boardHistory = useChessStore((state) => state.boardHistory);
-   const promotionChoice = useChessStore((state) => state.promotionChoice);
-
-   const { setGameState, setWinner } = useChessStore.getState()
+   const {
+      setGameState,
+      setWinner,
+      currentPlayer,
+      gameState,
+      boardHistory,
+      promotionChoice
+   } = useChessStore.getState()
 
    useEffect(() => {
       // Don't check if the game is already over or a promotion is pending

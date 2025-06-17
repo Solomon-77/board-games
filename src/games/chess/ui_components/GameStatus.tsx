@@ -4,8 +4,8 @@ import { resetGame } from "../core_logic/utils/resetGame"
 const GameStatus = () => {
    const gameState = useChessStore((state) => state.gameState)
    const currentPlayer = useChessStore((state) => state.currentPlayer)
-   const promotionChoice = useChessStore((state) => state.promotionChoice)
-   const winner = useChessStore((state) => state.winner)
+
+   const { promotionChoice, winner } = useChessStore.getState()
 
    return (
       <div className="flex-1 grid place-items-center">
