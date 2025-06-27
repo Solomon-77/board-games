@@ -9,74 +9,78 @@ import { isInCheck } from "../core_logic/utils/isInCheck"
 import PromotionModal from "./PromotionModal"
 
 const ChessGame = () => {
-   const board = useChessStore((state) => state.board);
-   const {
-      setGameState,
-      setWinner,
-      currentPlayer,
-      gameState,
-      boardHistory,
-      promotionChoice
-   } = useChessStore.getState()
+    const board = useChessStore((state) => state.board);
+    // const selectedPiece = useChessStore((state) => state.selectedPiece);
 
-   useEffect(() => {
-      // Don't check if the game is already over or a promotion is pending
-      if (gameState !== 'playing' || promotionChoice) return;
+    const {
+        setGameState,
+        setWinner,
+        currentPlayer,
+        gameState,
+        boardHistory,
+        promotionChoice
+    } = useChessStore.getState()
 
-      const currentBoardStateString = getBoardStateString(board);
+    useEffect(() => {
+        // Don't check if the game is already over or a promotion is pending
+        if (gameState !== 'playing' || promotionChoice) return;
 
-      // Check for Threefold Repetition
-      const repetitionCount = boardHistory.filter(state => state === currentBoardStateString).length;
-      if (repetitionCount >= 3) {
-         setGameState('stalemate');
-         return;
-      }
+        const currentBoardStateString = getBoardStateString(board);
 
-      // Check for Insufficient Material
-      if (isInsufficientMaterial(board)) {
-         setGameState('stalemate');
-         return;
-      }
-
-      // Check for Checkmate or Stalemate (no legal moves)
-      if (!hasAnyLegalMoves()) {
-         if (isInCheck(currentPlayer, board)) {
-            setGameState('checkmate');
-            setWinner(currentPlayer === 'white' ? 'black' : 'white');
-         } else {
+        // Check for Threefold Repetition
+        const repetitionCount = boardHistory.filter(state => state === currentBoardStateString).length;
+        if (repetitionCount >= 3) {
             setGameState('stalemate');
-         }
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [board, currentPlayer, gameState, promotionChoice, boardHistory]);
+            return;
+        }
 
-   return (
-      <>
-         <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
-            {board.map((row, rowIndex) => (
-               row.map((piece, colIndex) => (
-                  <div
-                     key={`${rowIndex}-${colIndex}`}
-                     onClick={() => clickAndMovePiece(rowIndex, colIndex)}
-                     className={`aspect-square grid place-items-center ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}`}
-                  >
-                     {piece && (
-                        <img
-                           src={pieces[piece]}
-                           alt={piece}
-                           className="h-full p-[3%] select-none"
-                           draggable={false}
-                        />
-                     )}
-                  </div>
-               ))
-            ))}
-         </div>
-         {promotionChoice && (
-            <PromotionModal />
-         )}
-      </>
-   )
+        // Check for Insufficient Material
+        if (isInsufficientMaterial(board)) {
+            setGameState('stalemate');
+            return;
+        }
+
+        // Check for Checkmate or Stalemate (no legal moves)
+        if (!hasAnyLegalMoves()) {
+            if (isInCheck(currentPlayer, board)) {
+                setGameState('checkmate');
+                setWinner(currentPlayer === 'white' ? 'black' : 'white');
+            } else {
+                setGameState('stalemate');
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [board, currentPlayer, gameState, promotionChoice, boardHistory]);
+
+    return (
+        <>
+            <div className="grid grid-cols-8 max-w-[512px] w-full rounded-lg shadow-md overflow-hidden">
+                {board.map((row, rowIndex) => (
+                    row.map((piece, colIndex) => (
+                        <div
+                            key={`${rowIndex}-${colIndex}`}
+                            onClick={() => clickAndMovePiece(rowIndex, colIndex)}
+                            className={`aspect-square grid place-items-center cursor-pointer 
+                                ${(rowIndex + colIndex) % 2 === 0 ? 'bg-white' : 'bg-amber-800'}
+                            `}
+                        >
+                            {piece && (
+                                <img
+                                    src={pieces[piece]}
+                                    alt={piece}
+                                    className="h-full p-[3%] select-none"
+                                    draggable={false}
+                                />
+                            )}
+                        </div>
+                    ))
+                ))}
+            </div>
+            {promotionChoice && (
+                <PromotionModal />
+            )}
+        </>
+    )
 }
 
 export default ChessGame
